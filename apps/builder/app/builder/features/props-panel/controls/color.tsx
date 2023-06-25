@@ -1,10 +1,12 @@
-import { InputField, theme, useId } from "@webstudio-is/design-system";
+import { useId } from "@webstudio-is/design-system";
 import {
   type ControlProps,
   getLabel,
   useLocalValue,
   HorizontalLayout,
 } from "../shared";
+import { parseColor } from "@webstudio-is/css-data";
+import { PropertiesColorPicker } from "../../style-panel/shared/color-picker/properties-color-picker";
 
 // @todo:
 //   use ColorPicker (need to refactor it first,
@@ -23,23 +25,26 @@ export const ColorControl = ({
     onChange({ type: "string", value })
   );
 
+  const currentColor = parseColor({
+    type: "unparsed",
+    value: localValue.value,
+  });
+
   return (
     <HorizontalLayout
       label={getLabel(meta, propName)}
       id={id}
       onDelete={onDelete}
     >
-      <InputField
-        id={id}
-        value={localValue.value}
-        onChange={(event) => localValue.set(event.target.value)}
-        onBlur={localValue.save}
-        onKeyDown={(event) => {
-          if (event.key === "Enter") {
-            localValue.save();
-          }
+      <PropertiesColorPicker
+        property="color"
+        currentColor={currentColor}
+        value={currentColor}
+        onChange={(styleValue) => {
+          console.log(styleValue);
         }}
-        css={{ width: theme.spacing[22] }}
+        onChangeComplete={() => {}}
+        onAbort={() => {}}
       />
     </HorizontalLayout>
   );

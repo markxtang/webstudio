@@ -19,6 +19,7 @@ export const meta: WsComponentMeta = {
   label: "Vimeo",
   order: 1,
   icon: VimeoIcon,
+  invalidAncestors: ["Button"],
   states: defaultStates,
   presetStyle,
   template: [

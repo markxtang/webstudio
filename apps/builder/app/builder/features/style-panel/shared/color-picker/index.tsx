@@ -7,7 +7,6 @@ import type {
   KeywordValue,
   RgbValue,
   StyleProperty,
-  StyleValue,
 } from "@webstudio-is/css-data";
 import {
   Box,
@@ -19,9 +18,7 @@ import {
 } from "@webstudio-is/design-system";
 import { toValue } from "@webstudio-is/css-engine";
 import { theme } from "@webstudio-is/design-system";
-import type { StyleSource } from "./style-info";
-import { CssValueInput } from "./css-value-input";
-import type { IntermediateStyleValue } from "./css-value-input/css-value-input";
+import type { IntermediateStyleValue } from "../css-value-input/css-value-input";
 import { isCanvasPointerEventsEnabledStore } from "~/builder/shared/nano-states";
 import { useStore } from "@nanostores/react";
 
@@ -155,18 +152,14 @@ export type CssColorPickerValueInput =
   | IntermediateStyleValue
   | InvalidValue;
 
-type ColorPickerProps = {
+export type ColorPickerProps = {
   onChange: (value: CssColorPickerValueInput | undefined) => void;
   onChangeComplete: (event: {
     value: RgbValue | KeywordValue | InvalidValue;
   }) => void;
-  onHighlight: (value: StyleValue | undefined) => void;
-  onAbort: () => void;
   intermediateValue: CssColorPickerValueInput | undefined;
   value: RgbValue | KeywordValue;
   currentColor: RgbValue;
-  styleSource: StyleSource;
-  keywords?: Array<KeywordValue>;
   property: StyleProperty;
 };
 
@@ -176,10 +169,6 @@ export const ColorPicker = ({
   intermediateValue,
   onChange,
   onChangeComplete,
-  onHighlight,
-  onAbort,
-  styleSource,
-  keywords,
   property,
 }: ColorPickerProps) => {
   const [displayColorPicker, setDisplayColorPicker] = useState(false);
@@ -256,7 +245,7 @@ export const ColorPicker = ({
     return colorResultToRgbValue(newColor);
   };
 
-  const prefix = (
+  return (
     <Popover
       modal
       open={displayColorPicker}
@@ -303,47 +292,5 @@ export const ColorPicker = ({
         />
       </PopoverContent>
     </Popover>
-  );
-
-  return (
-    <CssValueInput
-      styleSource={styleSource}
-      prefix={prefix}
-      showSuffix={false}
-      property={property}
-      value={value}
-      intermediateValue={intermediateValue}
-      keywords={keywords}
-      onChange={(styleValue) => {
-        if (
-          styleValue?.type === "rgb" ||
-          styleValue?.type === "keyword" ||
-          styleValue?.type === "intermediate" ||
-          styleValue?.type === "invalid" ||
-          styleValue === undefined
-        ) {
-          onChange(styleValue);
-          return;
-        }
-
-        onChange({
-          type: "intermediate",
-          value: toValue(styleValue),
-        });
-      }}
-      onHighlight={onHighlight}
-      onChangeComplete={({ value }) => {
-        if (value.type === "rgb" || value.type === "keyword") {
-          onChangeComplete({ value });
-          return;
-        }
-        // In case value is parsed to something wrong
-        onChange({
-          type: "invalid",
-          value: toValue(value),
-        });
-      }}
-      onAbort={onAbort}
-    />
   );
 };

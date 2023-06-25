@@ -1,40 +1,11 @@
 import { Flex } from "@webstudio-is/design-system";
-import { toValue } from "@webstudio-is/css-engine";
 import type { ControlProps } from "../../style-sections";
-import {
-  type CssColorPickerValueInput,
-  ColorPicker,
-} from "../../shared/color-picker";
-import { colord } from "colord";
+import { type CssColorPickerValueInput } from "../../shared/color-picker";
+import { StyleColorPicker } from "../../shared/color-picker/style-color-picker";
 import { getStyleSource } from "../../shared/style-info";
 import { styleConfigByName } from "../../shared/configs";
 import { useState } from "react";
-import type { RgbValue, StyleValue } from "@webstudio-is/css-data";
-
-const parseColor = (color?: StyleValue): RgbValue => {
-  const colordValue = colord(toValue(color));
-
-  if (colordValue.isValid()) {
-    const rgb = colordValue.toRgb();
-    return {
-      type: "rgb",
-      r: rgb.r,
-      g: rgb.g,
-      b: rgb.b,
-      alpha: rgb.a ?? 1,
-    };
-  }
-
-  // @todo what to show as default?
-  // Default to black
-  return {
-    type: "rgb",
-    r: 0,
-    g: 0,
-    b: 0,
-    alpha: 1,
-  };
-};
+import { parseColor } from "@webstudio-is/css-data";
 
 export const ColorControl = ({
   property,
@@ -65,7 +36,7 @@ export const ColorControl = ({
 
   return (
     <Flex align="center" gap="1">
-      <ColorPicker
+      <StyleColorPicker
         currentColor={currentColor}
         property={property}
         value={value}
