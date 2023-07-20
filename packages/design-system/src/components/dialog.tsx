@@ -1,13 +1,13 @@
-import {
-  type ReactNode,
-  type ComponentProps,
-  type Ref,
-  forwardRef,
-} from "react";
 import * as Primitive from "@radix-ui/react-dialog";
-import { css, theme, keyframes, type CSS } from "../stitches.config";
+import {
+  forwardRef,
+  type ComponentProps,
+  type ReactNode,
+  type Ref,
+} from "react";
+import { css, keyframes, theme, type CSS } from "../stitches.config";
+import { CloseButton, TitleSlot, floatingPanelStyle } from "./floating-panel";
 import { PanelTitle } from "./panel-title";
-import { floatingPanelStyle, CloseButton, TitleSlot } from "./floating-panel";
 
 export const Dialog = Primitive.Root;
 export const DialogTrigger = Primitive.Trigger;
@@ -26,13 +26,23 @@ export const DialogContent = forwardRef(
       children,
       className,
       css,
+      overlayBackdrop = true,
       ...props
-    }: ComponentProps<typeof Primitive.Content> & { css?: CSS },
+    }: ComponentProps<typeof Primitive.Content> & {
+      css?: CSS;
+      overlayBackdrop?: boolean;
+    },
     forwardedRef: Ref<HTMLDivElement>
   ) => {
     return (
       <Primitive.Portal>
-        <Primitive.Overlay className={overlayStyle()} />
+        <Primitive.Overlay
+          className={overlayStyle(
+            overlayBackdrop
+              ? { backgroundColor: "rgba(17, 24, 28, 0.66)" }
+              : undefined
+          )}
+        />
         <Primitive.Content
           className={contentStyle({ className, css })}
           {...props}
@@ -74,10 +84,10 @@ const overlayShow = keyframes({
   to: { opacity: 1 },
 });
 const overlayStyle = css({
-  backgroundColor: "rgba(17, 24, 28, 0.66)",
   position: "fixed",
   inset: 0,
   animation: `${overlayShow} 150ms ${theme.easing.easeOut}`,
+  zIndex: theme.zIndices.max,
 });
 
 const contentShow = keyframes({
@@ -94,6 +104,7 @@ const contentStyle = css(floatingPanelStyle, {
   maxWidth: theme.spacing[35],
   maxHeight: "85vh",
   animation: `${contentShow} 150ms ${theme.easing.easeOut}`,
+  zIndex: theme.zIndices.max,
 });
 
 const titleStyle = css({

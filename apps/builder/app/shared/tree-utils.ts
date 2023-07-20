@@ -244,7 +244,7 @@ export const reparentInstanceMutable = (
   const nextParent = instances.get(parentId);
   const instance = instances.get(instanceId);
 
-  // delect is target is one of own descendants
+  // delect if target is one of own descendants
   // prevent reparenting to avoid infinite loop
   const instanceDescendants = findTreeInstanceIds(instances, instanceId);
   for (const instanceId of instanceDescendants) {

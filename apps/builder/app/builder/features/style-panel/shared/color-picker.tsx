@@ -108,6 +108,94 @@ type ColorPickerProps = {
   property: StyleProperty;
 };
 
+export const ColorPickerUI = ({
+  trigger,
+  intermediateValue,
+  value,
+  currentColor,
+  onChange,
+  onChangeComplete,
+  onClose,
+}: {
+  trigger: React.ReactElement;
+  onChange: (value: CssColorPickerValueInput | undefined) => void;
+  onChangeComplete: (event: {
+    value: RgbValue | KeywordValue | InvalidValue;
+  }) => void;
+  intermediateValue: CssColorPickerValueInput | undefined;
+  value: RgbValue | KeywordValue;
+  currentColor: RgbValue;
+  onClose?: () => void;
+}) => {
+  const [displayColorPicker, setDisplayColorPicker] = useState(false);
+
+  const currentValue =
+    intermediateValue ?? styleValueResolve(value, currentColor);
+
+  const rgbValue = styleValueToRgbaColor(currentValue);
+
+  /**
+   * By default, the color can be transparent, but if the user chooses a color from the picker,
+   * we must set alpha = 1 otherwise all selected colors will be transparent.
+   */
+  const fixColor = (color: ColorResult) => {
+    const newColor = { ...color.rgb };
+
+    if (
+      currentValue.type === "keyword" &&
+      currentValue.value === "transparent"
+    ) {
+      newColor.a = 1;
+    }
+    return colorResultToRgbValue(newColor);
+  };
+
+  return (
+    <Popover
+      modal
+      open={displayColorPicker}
+      onOpenChange={(open) => {
+        setDisplayColorPicker(open);
+        if (!open && typeof onClose === "function") {
+          onClose();
+        }
+      }}
+    >
+      <PopoverTrigger
+        asChild
+        aria-label="Open color picker"
+        onClick={() => setDisplayColorPicker((shown) => !shown)}
+      >
+        {trigger}
+      </PopoverTrigger>
+
+      <PopoverContent css={{ zIndex: theme.zIndices.max }}>
+        <SketchPicker
+          color={rgbValue}
+          onChange={(color: ColorResult, event) => {
+            // Prevents selection of text during drag.
+            if (event.type === "mousedown") {
+              event.preventDefault();
+            }
+            const newColor = fixColor(color);
+            onChange(newColor);
+          }}
+          onChangeComplete={(color: ColorResult) => {
+            const newColor = fixColor(color);
+            onChangeComplete({
+              value: newColor,
+            });
+          }}
+          // @todo to remove both when we have preset colors
+          presetColors={[]}
+          className={pickerStyle()}
+          styles={defaultPickerStyles}
+        />
+      </PopoverContent>
+    </Popover>
+  );
+};
+
 export const ColorPicker = ({
   value,
   currentColor,
@@ -256,3 +344,6 @@ export const ColorPicker = ({
     />
   );
 };
+function useFixDragOverCanvas() {
+  throw new Error("Function not implemented.");
+}

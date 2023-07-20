@@ -81,7 +81,7 @@ const EmbedTemplateProp = z.union([
   }),
 ]);
 
-type EmbedTemplateProp = z.infer<typeof EmbedTemplateProp>;
+export type EmbedTemplateProp = z.infer<typeof EmbedTemplateProp>;
 
 const EmbedTemplateStyleDeclRaw = z.object({
   // State selector, e.g. :hover
@@ -98,6 +98,19 @@ export type EmbedTemplateStyleDecl = Simplify<
 
 export const EmbedTemplateStyleDecl =
   EmbedTemplateStyleDeclRaw as z.ZodType<EmbedTemplateStyleDecl>;
+
+export type EmbedTemplateStyles = {
+  styles: EmbedTemplateStyleDecl[];
+  children?: EmbedTemplateStyles[];
+};
+
+// @todo figure out a way to construct EmbedTemplateInstance so that it can use EmbedTemplateStyles.
+export const EmbedTemplateStyles: z.ZodType<EmbedTemplateStyles> = z.lazy(() =>
+  z.object({
+    styles: z.array(EmbedTemplateStyleDecl),
+    children: z.optional(z.array(EmbedTemplateStyles)),
+  })
+);
 
 export type EmbedTemplateInstance = {
   type: "instance";

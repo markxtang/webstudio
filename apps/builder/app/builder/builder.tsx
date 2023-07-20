@@ -1,4 +1,4 @@
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useUnmount } from "react-use";
 import { TooltipProvider } from "@radix-ui/react-tooltip";
 import { type Publish, usePublish } from "~/shared/pubsub";
@@ -45,6 +45,7 @@ import type { Asset } from "@webstudio-is/asset-uploader";
 import { BlockingAlerts } from "./features/blocking-alerts";
 import { useStore } from "@nanostores/react";
 import { useSyncPageUrl } from "~/shared/pages";
+import { AI } from "./features/ai";
 
 registerContainers();
 
@@ -272,6 +273,7 @@ export const Builder = ({
   useSharedShortcuts({ source: "builder" });
 
   const [isPreviewMode] = useIsPreviewMode();
+  const [showAi, setShowAi] = useState(isPreviewMode == false);
   usePublishShortcuts(publish);
   const { onRef: onRefReadCanvas, onTransitionEnd } = useReadCanvasRect();
   // We need to initialize this in both canvas and builder,
@@ -327,6 +329,9 @@ export const Builder = ({
           <Inspector publish={publish} navigatorLayout={navigatorLayout} />
         </SidePanel>
         {isPreviewMode === false && <Footer />}
+        {isPreviewMode === false && showAi && (
+          <AI onDone={() => setShowAi(false)} />
+        )}
         <BlockingAlerts />
       </ChromeWrapper>
     </TooltipProvider>

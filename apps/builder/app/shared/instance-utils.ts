@@ -11,6 +11,7 @@ import {
   type WsComponentMeta,
   generateDataFromEmbedTemplate,
   type EmbedTemplateData,
+  WsEmbedTemplate,
 } from "@webstudio-is/react-sdk";
 import {
   propsStore,
@@ -24,6 +25,7 @@ import {
   breakpointsStore,
   registeredComponentMetasStore,
   dataSourcesStore,
+  selectedPageStore,
 } from "./nano-states";
 import {
   type DroppableTarget,
@@ -276,6 +278,47 @@ export const findClosestDroppableTarget = (
   };
 };
 
+export const findSelectedInstance = () => {
+  const selectedPage = selectedPageStore.get();
+  if (selectedPage === undefined) {
+    return;
+  }
+  return findClosestDroppableTarget(
+    registeredComponentMetasStore.get(),
+    instancesStore.get(),
+    // fallback to root as drop target
+    selectedInstanceSelectorStore.get() ?? [selectedPage.rootInstanceId],
+    []
+  );
+};
+
+export const getTemplateData = (template: WsEmbedTemplate) => {
+  const breakpoints = breakpointsStore.get();
+  const breakpointValues = Array.from(breakpoints.values());
+  const baseBreakpoint = breakpointValues.find(isBaseBreakpoint);
+  if (baseBreakpoint === undefined) {
+    return;
+  }
+  return generateDataFromEmbedTemplate(template, baseBreakpoint.id);
+};
+
+export const insertTemplate = (
+  template: WsEmbedTemplate,
+  dropTarget: DroppableTarget
+) => {
+  const breakpoints = breakpointsStore.get();
+  const breakpointValues = Array.from(breakpoints.values());
+  const baseBreakpoint = breakpointValues.find(isBaseBreakpoint);
+  if (baseBreakpoint === undefined) {
+    return;
+  }
+  const templateData = generateDataFromEmbedTemplate(
+    template,
+    baseBreakpoint.id
+  );
+  insertTemplateData(templateData, dropTarget);
+};
+
 export const insertTemplateData = (
   templateData: EmbedTemplateData,
   dropTarget: DroppableTarget
@@ -286,6 +329,7 @@ export const insertTemplateData = (
     props: insertedProps,
     dataSources: insertedDataSources,
   } = templateData;
+
   const rootInstanceId = insertedInstances[0].id;
   store.createTransaction(
     [
@@ -543,4 +587,128 @@ export const escapeSelection = () => {
   }
   selectedInstanceSelectorStore.set(undefined);
   selectedStyleSourceSelectorStore.set(undefined);
+};
+
+export const replaceTemplate = (
+  template: WsEmbedTemplate,
+  instanceSelector: InstanceSelector
+) => {
+  const breakpoints = breakpointsStore.get();
+  const breakpointValues = Array.from(breakpoints.values());
+  const baseBreakpoint = breakpointValues.find(isBaseBreakpoint);
+
+  if (baseBreakpoint === undefined) {
+    return;
+  }
+  const {
+    children: insertedChildren,
+    instances: insertedInstances,
+    props: insertedProps,
+    styleSourceSelections: insertedStyleSourceSelections,
+    styleSources: insertedStyleSources,
+    styles: insertedStyles,
+  } = generateDataFromEmbedTemplate(template, baseBreakpoint.id);
+
+  store.createTransaction(
+    [
+      instancesStore,
+      propsStore,
+      styleSourceSelectionsStore,
+      styleSourcesStore,
+      stylesStore,
+    ],
+    (instances, props, styleSourceSelections, styleSources, styles) => {
+      const targetInstanceId = instanceSelector[0];
+      const parentInstanceId = instanceSelector[1];
+      const parentInstance =
+        parentInstanceId === undefined
+          ? undefined
+          : instances.get(parentInstanceId);
+
+      const parentSelector = getAncestorInstanceSelector(
+        instanceSelector,
+        parentInstanceId
+      );
+
+      if (!parentSelector) {
+        throw new Error("Could not determine dropTarget");
+      }
+
+      const dropTargetIndex = parentInstance
+        ? parentInstance.children.findIndex(
+            ({ type, value }) => type === "id" && value === targetInstanceId
+          )
+        : -1;
+      const dropTarget: DroppableTarget = {
+        parentSelector,
+        position: dropTargetIndex > -1 ? dropTargetIndex : "end",
+      };
+
+      const instanceIds = findTreeInstanceIdsExcludingSlotDescendants(
+        instances,
+        targetInstanceId
+      );
+      const localStyleSourceIds = findLocalStyleSourcesWithinInstances(
+        styleSources.values(),
+        styleSourceSelections.values(),
+        instanceIds
+      );
+
+      // may not exist when delete root
+      if (parentInstance) {
+        removeByMutable(
+          parentInstance.children,
+          (child) => child.type === "id" && child.value === targetInstanceId
+        );
+      }
+
+      for (const instanceId of instanceIds) {
+        instances.delete(instanceId);
+      }
+      // delete props and styles of deleted instance and its descendants
+      for (const prop of props.values()) {
+        if (instanceIds.has(prop.instanceId)) {
+          props.delete(prop.id);
+        }
+      }
+      for (const instanceId of instanceIds) {
+        styleSourceSelections.delete(instanceId);
+      }
+      for (const styleSourceId of localStyleSourceIds) {
+        styleSources.delete(styleSourceId);
+      }
+      for (const [styleDeclKey, styleDecl] of styles) {
+        if (localStyleSourceIds.has(styleDecl.styleSourceId)) {
+          styles.delete(styleDeclKey);
+        }
+      }
+
+      insertInstancesMutable(
+        instances,
+        props,
+        registeredComponentMetasStore.get(),
+        insertedInstances,
+        insertedChildren,
+        dropTarget
+      );
+      insertPropsCopyMutable(props, insertedProps, new Map(), new Map());
+      insertStyleSourcesCopyMutable(
+        styleSources,
+        insertedStyleSources,
+        new Set()
+      );
+      insertStyleSourceSelectionsCopyMutable(
+        styleSourceSelections,
+        insertedStyleSourceSelections,
+        new Map(),
+        new Map()
+      );
+      insertStylesCopyMutable(styles, insertedStyles, new Map(), new Map());
+
+      selectedInstanceSelectorStore.set(
+        getAncestorInstanceSelector(instanceSelector, insertedInstances[0].id)
+      );
+      selectedStyleSourceSelectorStore.set(undefined);
+    }
+  );
 };

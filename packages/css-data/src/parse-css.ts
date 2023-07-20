@@ -1,4 +1,6 @@
+import camelcase from "camelcase";
 import * as csstree from "css-tree";
+import warnOnce from "warn-once";
 import { parseCssValue as parseCssValueLonghand } from "./parse-css-value";
 import * as parsers from "./property-parsers/parsers";
 import * as toLonghand from "./property-parsers/to-longhand";
@@ -13,13 +15,13 @@ type Style = {
 
 export type Styles = Record<Selector, Style[]>;
 
-type Longhand = keyof typeof toLonghand;
+export type LonghandProperty = keyof typeof toLonghand;
 
-const parseCssValue = function parseCssValue(
-  property: Longhand | StyleProperty,
+export const parseCssDecl = function parseCssDecl(
+  property: LonghandProperty | StyleProperty,
   value: string
 ): S {
-  const unwrap = toLonghand[property as Longhand];
+  const unwrap = toLonghand[property as LonghandProperty];
 
   if (typeof unwrap === "function") {
     const longhands = unwrap(value);
@@ -92,12 +94,25 @@ export const parseCss = function cssToWS(css: string) {
     }
 
     if (node.type === "Declaration") {
+      const property = camelcase(node.property);
       const stringValue = csstree.generate(node.value);
 
-      const parsedCss = parseCssValue(
-        node.property as Longhand | StyleProperty,
-        stringValue
-      );
+      let parsedCss = {};
+
+      try {
+        parsedCss = parseCssDecl(
+          property as LonghandProperty | StyleProperty,
+          stringValue
+        );
+      } catch (error) {
+        if (process.env.NODE_ENV !== "production") {
+          warnOnce(
+            true,
+            `paseCss: parsing failed for \`${node.property}: ${stringValue}\``
+          );
+        }
+        return;
+      }
 
       (Object.entries(parsedCss) as [StyleProperty, StyleValue][]).forEach(
         ([property, value]) => {

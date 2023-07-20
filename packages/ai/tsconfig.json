@@ -1,0 +1,5 @@
+{
+  "extends": "@webstudio-is/tsconfig/base.json",
+  "include": ["./", "../../@types/**/*.d.ts"],
+  "exclude": ["src/templates/**/*.ts", "src/chains/**/__generated__/*.ts"]
+}

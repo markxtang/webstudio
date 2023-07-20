@@ -1,0 +1,365 @@
+// <button>Start</button>
+
+import type { ErrorResponse, SuccessResponse } from "@webstudio-is/ai";
+import {
+  Box,
+  Button,
+  Card,
+  Dialog,
+  DialogContent,
+  Flex,
+  InputField,
+  Text,
+  theme,
+} from "@webstudio-is/design-system";
+import { SpinnerIcon, WebstudioIcon } from "@webstudio-is/icons";
+import { useEffect, useReducer, useRef } from "react";
+
+// <Dialog>
+//   <input></input>
+// </Dialog>
+
+// 1. Tell me about your project in one short sentence.
+
+// For example: a website for a yoga studio company.
+
+// <input />
+
+// 2. Tell me about the style, colors and vibes
+
+// <input />
+
+// 3. Generate theme
+
+// show theme and components
+
+// 4. Provide a list of sections you want in your page
+// For example: header, hero, testimonials. footer.
+
+// 5.? if not header and footer mentioned ask "Do you want a header and footer?"
+
+// 6. Describe page layout and other stylistic requirements
+
+const steps = {
+  0: "description",
+  1: "style",
+  2: "generate_theme",
+  3: "infer_theme",
+  4: "components",
+  5: "info",
+  7: "generate_ui",
+} as const;
+
+type Step = keyof typeof steps;
+
+const messages: Record<(typeof steps)[Step], string> = {
+  description: "Tell me about your project in one short sentence.",
+  style: "Love it! Tell me about the style, colors and vibes",
+  generate_theme: "Generating theme",
+  infer_theme: "Generating theme",
+  components: "",
+  info: "",
+  generate_ui: "Generating UI",
+};
+
+type AssistantMessage = {
+  role: "assistant";
+  message: string;
+  data?: any;
+};
+
+type UserMessage = {
+  role: "user";
+  message: string;
+  data?: any;
+};
+
+type State = {
+  step: Step;
+  retry: "idle" | "requested" | undefined;
+  messages: Array<AssistantMessage | UserMessage>;
+};
+
+type Action = {
+  goTo: Step;
+  retry?: "idle" | "requested";
+  payload?: {
+    promptId?: Step;
+    value: AssistantMessage | UserMessage;
+  };
+};
+
+const assistantMessage = (message: string, data?: any): AssistantMessage => {
+  return { message, role: "assistant" };
+};
+
+const userMessage = (message: string, data?: any): UserMessage => {
+  return { message, data, role: "user" };
+};
+
+const reducer = function reducer(state: State, action: Action) {
+  const { goTo, retry, payload } = action;
+
+  if (typeof payload === "undefined") {
+    return {
+      ...state,
+      retry,
+      step: goTo,
+    };
+  }
+
+  const messages = [...state.messages];
+
+  let insertAt = -1;
+  if (typeof payload.promptId === "number") {
+    insertAt = messages.findIndex(
+      (message) => message.data?.promptId === payload.promptId
+    );
+  }
+  if (insertAt > -1) {
+    messages[insertAt] = payload.value;
+  } else {
+    messages.push(payload.value);
+  }
+  return {
+    step: goTo,
+    retry,
+    messages,
+  };
+};
+
+const getInitialState = (): State => {
+  return {
+    step: 0,
+    retry: undefined,
+    messages: [
+      {
+        role: "assistant",
+        message: messages[steps[0]],
+      },
+    ],
+  };
+};
+
+const useAi = function useAi(
+  [state, dispatch]: [State, React.Dispatch<Action>],
+  abort: React.MutableRefObject<AbortController | null>
+) {
+  useEffect(() => {
+    abort.current = new AbortController();
+    const signal = abort.current.signal;
+    if (state.retry === "idle") {
+      return;
+    }
+    const run = async function run() {
+      if (state.step === 2) {
+        const result = await retry<"theme">(() =>
+          request<"theme">("", {
+            method: "POST",
+            body: JSON.stringify({
+              _action: "generate",
+              step: "theme",
+            }),
+            signal,
+          })
+        );
+
+        if (result.success) {
+          dispatch({
+            goTo: 4,
+            payload: {
+              promptId: 2,
+              value: assistantMessage(null, result.responses[0].json),
+            },
+          });
+        }
+      }
+    };
+
+    run();
+
+    return () => {
+      abort.current?.abort();
+    };
+  }, [state, abort]);
+};
+
+export const AI = () => {
+  const store = useReducer(reducer, getInitialState());
+  const [state, dispatch] = store;
+
+  const aiAbort = useRef<AbortController | null>(null);
+
+  useAi(store, aiAbort);
+
+  const stepMessage = messages[steps[state.step]];
+  const isGenerating = state.retry !== "idle" && [2, 3, 7].includes(state.step);
+  const showChat = !isGenerating && [0, 1, 5].includes(state.step);
+
+  return (
+    <Dialog open={true}>
+      <DialogContent
+        css={{
+          border: "none",
+          backgroundColor: "transparent",
+          boxShadow: "none",
+          bottom: theme.spacing[10],
+          top: "auto",
+          maxWidth: "100%",
+          width: "auto",
+        }}
+        overlayBackdrop={false}
+      >
+        <Box css={{ width: "100%", maxWidth: 500 }}>
+          <Card
+            css={{
+              boxShadow: theme.shadows.brandElevationBig,
+              width: "100%",
+            }}
+          >
+            {showChat
+              ? state.messages.map((item, index) =>
+                  item === null ? null : (
+                    <Flex
+                      key={index}
+                      gap="2"
+                      css={{
+                        paddingInline: theme.spacing[5],
+                        paddingBlock: theme.spacing[4],
+                      }}
+                    >
+                      {item.role === "assistant" ? <WebstudioIcon /> : ""}
+                      <Box css={{ flex: 1 }}>
+                        <Text>{item.message}</Text>
+                      </Box>
+                    </Flex>
+                  )
+                )
+              : null}
+            {isGenerating ? (
+              <Box>
+                <Text css={{ textAlign: "center" }}>🪄</Text>
+                <Flex>
+                  <SpinnerIcon /> <Text>{stepMessage}...</Text>
+                  <Button
+                    css={{ textTransform: "uppercase" }}
+                    onClick={() => {
+                      if (window.confirm("Are you sure you want to abort?")) {
+                        aiAbort.current?.abort();
+                        dispatch({ goTo: state.step, retry: "idle" });
+                      }
+                    }}
+                  >
+                    Stop
+                  </Button>
+                </Flex>
+              </Box>
+            ) : null}
+            {state.retry === "idle" ? (
+              <Button
+                css={{ textTransform: "uppercase" }}
+                onClick={() => {
+                  dispatch({ goTo: state.step, retry: "requested" });
+                }}
+              >
+                Retry
+              </Button>
+            ) : null}
+            {state.step === 0 ? (
+              <InputField
+                autoFocus
+                css={inputStyles}
+                onKeyPress={(event) => {
+                  if (event.key !== "Enter") {
+                    return;
+                  }
+                  dispatch({
+                    goTo: 1,
+                    payload: {
+                      promptId: 0,
+                      value: userMessage(event.currentTarget.value),
+                    },
+                  });
+                  dispatch({
+                    goTo: 1,
+                    payload: {
+                      value: assistantMessage(messages[steps[1]]),
+                    },
+                  });
+                }}
+              />
+            ) : null}
+            {state.step === 1 ? (
+              <InputField
+                autoFocus
+                css={inputStyles}
+                onKeyPress={(event) => {
+                  if (event.key !== "Enter") {
+                    return;
+                  }
+                  dispatch({
+                    goTo: 2,
+                    payload: {
+                      promptId: 2,
+                      value: userMessage(event.currentTarget.value),
+                    },
+                  });
+                }}
+              />
+            ) : null}
+          </Card>
+        </Box>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+const inputStyles = {
+  boxShadow: theme.shadows.brandElevationSmall,
+  width: "100%",
+  outline: "none !important",
+  border: "none",
+  backgroundColor: theme.colors.gray3,
+};
+
+const request = function request<Step>(...args: Parameters<typeof fetch>) {
+  return fetch(...args)
+    .then((res) => {
+      if (res.ok === false) {
+        return {
+          success: false,
+          type: "generic_error",
+          status: res.status,
+          message: res.statusText,
+        };
+      }
+      return res.json();
+    })
+    .catch((error) => ({
+      success: false,
+      type: error.name === "AbortError" ? "aborted" : "generic_error",
+      status: 500,
+      message: "",
+    })) as Promise<SuccessResponse<Step> | ErrorResponse>;
+};
+
+const retry = function retry<Step>(
+  fn: () => ReturnType<typeof request<Step>>,
+  times = 3,
+  timeout = 45000
+): ReturnType<typeof request<Step>> {
+  return fn().then((result) => {
+    if (result.success === true) {
+      return result;
+    }
+    if (times > 0) {
+      return retry(fn, times - 1);
+    }
+    return {
+      success: false,
+      type: "retry_limit_reached",
+      status: 500,
+      message: "",
+    };
+  });
+};

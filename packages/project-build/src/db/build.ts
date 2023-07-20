@@ -1,33 +1,33 @@
 /* eslint no-console: ["error", { allow: ["time", "timeEnd"] }] */
 
-import { nanoid } from "nanoid";
 import {
-  type Build as DbBuild,
-  prisma,
   Prisma,
+  prisma,
+  type Build as DbBuild,
 } from "@webstudio-is/prisma-client";
 import {
   AuthorizationError,
   authorizeProject,
   type AppContext,
 } from "@webstudio-is/trpc-interface/index.server";
-import type { Build } from "../types";
+import { nanoid } from "nanoid";
+import { parseDataSources } from "../schema/data-sources";
+import type { Deployment } from "../schema/deployment";
 import { Pages } from "../schema/pages";
+import type { Build } from "../types";
 import {
   createInitialBreakpoints,
   parseBreakpoints,
   serializeBreakpoints,
 } from "./breakpoints";
-import { parseStyles } from "./styles";
-import { parseStyleSources } from "./style-sources";
-import { parseStyleSourceSelections } from "./style-source-selections";
-import { parseProps } from "./props";
-import { parseDataSources } from "../schema/data-sources";
-import { parseInstances, serializeInstances } from "./instances";
 import { parseDeployment, serializeDeployment } from "./deployment";
-import type { Deployment } from "../schema/deployment";
+import { parseInstances, serializeInstances } from "./instances";
+import { parseProps } from "./props";
+import { parseStyleSourceSelections } from "./style-source-selections";
+import { parseStyleSources } from "./style-sources";
+import { parseStyles } from "./styles";
 
-const parseBuild = async (build: DbBuild): Promise<Build> => {
+export const parseBuild = async (build: DbBuild): Promise<Build> => {
   // Hardcode skipValidation to true for now
   const skipValidation = true;
   // eslint-disable-next-line no-console
