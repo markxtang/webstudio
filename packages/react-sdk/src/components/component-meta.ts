@@ -22,7 +22,7 @@ export const componentCategories = [
   "text",
   "media",
   "forms",
-  "radix",
+  "Radix UI (shadcn)",
   "hidden",
 ] as const;
 

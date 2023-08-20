@@ -97,7 +97,7 @@ export const metaDialogClose: WsComponentMeta = {
  * Copyright (c) 2023 shadcn
  **/
 export const metaDialog: WsComponentMeta = {
-  category: "radix",
+  category: "Radix UI (shadcn)",
   order: 4,
   type: "container",
   icon: DialogIcon,

@@ -43,7 +43,7 @@ export const metaPopoverContent: WsComponentMeta = {
  * Copyright (c) 2023 shadcn
  **/
 export const metaPopover: WsComponentMeta = {
-  category: "radix",
+  category: "Radix UI (shadcn)",
   order: 6,
   type: "container",
   icon: PopoverIcon,

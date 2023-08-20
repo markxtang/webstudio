@@ -20,7 +20,7 @@ const presetStyle = {
 } satisfies PresetStyle<"div">;
 
 export const metaCollapsible: WsComponentMeta = {
-  category: "radix",
+  category: "Radix UI (shadcn)",
   order: 5,
   type: "container",
   presetStyle,

@@ -14,7 +14,7 @@ const presetStyle = {
 } satisfies PresetStyle<"label">;
 
 export const meta: WsComponentMeta = {
-  category: "radix",
+  category: "Radix UI (shadcn)",
   order: 102,
   type: "container",
   icon: LabelIcon,

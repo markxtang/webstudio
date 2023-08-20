@@ -114,7 +114,7 @@ export const template = (props?: {
 ];
 
 export const meta: WsComponentMeta = {
-  category: "radix",
+  category: "Radix UI (shadcn)",
   order: 101,
   type: "container",
   invalidAncestors: ["Button"],

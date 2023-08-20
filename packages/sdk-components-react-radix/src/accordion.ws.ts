@@ -113,7 +113,7 @@ const accordionContentStyles: EmbedTemplateStyleDecl[] = [
 ].flat();
 
 export const metaAccordion: WsComponentMeta = {
-  category: "radix",
+  category: "Radix UI (shadcn)",
   order: 3,
   type: "container",
   icon: AccordionIcon,

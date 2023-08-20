@@ -63,7 +63,7 @@ const tabsContentStyles: EmbedTemplateStyleDecl[] = [
 ].flat();
 
 export const metaTabs: WsComponentMeta = {
-  category: "radix",
+  category: "Radix UI (shadcn)",
   order: 2,
   type: "container",
   icon: TabsIcon,

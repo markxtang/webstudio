@@ -43,7 +43,7 @@ export const metaTooltipContent: WsComponentMeta = {
  * Copyright (c) 2023 shadcn
  **/
 export const metaTooltip: WsComponentMeta = {
-  category: "radix",
+  category: "Radix UI (shadcn)",
   order: 7,
   type: "container",
   icon: TooltipIcon,

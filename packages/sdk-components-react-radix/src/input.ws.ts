@@ -14,7 +14,7 @@ const presetStyle = {
 } satisfies PresetStyle<"input">;
 
 export const meta: WsComponentMeta = {
-  category: "radix",
+  category: "Radix UI (shadcn)",
   order: 103,
   type: "control",
   invalidAncestors: ["Button"],

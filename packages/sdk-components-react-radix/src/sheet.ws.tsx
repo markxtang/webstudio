@@ -111,7 +111,7 @@ export const metaSheetClose: WsComponentMeta = {
  * Copyright (c) 2023 shadcn
  **/
 export const metaSheet: WsComponentMeta = {
-  category: "radix",
+  category: "Radix UI (shadcn)",
   order: 1,
   type: "container",
   icon: HamburgerMenuIcon,

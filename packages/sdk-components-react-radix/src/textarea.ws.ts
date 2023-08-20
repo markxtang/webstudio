@@ -14,7 +14,7 @@ const presetStyle = {
 } satisfies PresetStyle<"textarea">;
 
 export const meta: WsComponentMeta = {
-  category: "radix",
+  category: "Radix UI (shadcn)",
   order: 104,
   type: "control",
   invalidAncestors: ["Button"],
