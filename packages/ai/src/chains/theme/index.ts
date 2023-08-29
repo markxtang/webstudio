@@ -6,8 +6,9 @@ import { ThemeRaw, fromRawTheme } from "../../utils/theme";
 import type { Chain, ChainMessage } from "../types";
 import { types } from "./__generated__/prompt-theme-types";
 import { prompt as promptTemplate } from "./__generated__/theme.prompt";
+import { toTokensTheme } from "../../utils/theme";
 
-export const create = <ModelMessageFormat>(): Chain<
+export const createChain = <ModelMessageFormat>(): Chain<
   BaseModel<ModelMessageFormat>
 > =>
   async function chain({ model, context }) {
@@ -71,7 +72,7 @@ export const create = <ModelMessageFormat>(): Chain<
       success: true,
       llmMessages: [[requestMessage, ["assistant", message]]],
       code: [JSON.stringify(theme)],
-      json: [theme],
+      json: [toTokensTheme(theme)],
     };
   };
 
