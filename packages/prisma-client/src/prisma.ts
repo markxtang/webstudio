@@ -16,6 +16,11 @@ declare global {
 
 const logPrisma = process.env.NODE_ENV === "production";
 
+/**
+ * All the code below like initialize prisma should be moved into the builder and apps if used.
+ * The issue that this project depends on env variables not available in some frameworks
+ * getPgBouncerUrl() can be moved as a default fallback for db url at apps/builder/app/env/env.server.ts
+ **/
 const getPgBouncerUrl = () => {
   // The URL constructor does not support the "postgresql" protocol, so we replace it with "https"
   // to ensure that the connection is made over HTTPS instead of plain text.
