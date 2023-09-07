@@ -1,33 +1,20 @@
 /* eslint-disable */
 /* This is a auto generated file for building the project */
 
+import { type ReactNode, useContext } from "react";
+import { useStore } from "@nanostores/react";
 import * as sdk from "@webstudio-is/react-sdk";
 import type { PageData } from "~/routes/_index";
-import type { Components } from "@webstudio-is/react-sdk";
+import { ReactSdkContext } from "@webstudio-is/react-sdk";
 import type { Asset } from "@webstudio-is/sdk";
-
 import {
-  Body as Body_0,
-  Heading as Heading_0,
-  Box as Box_0,
-  Paragraph as Paragraph_0,
-  Image as Image_0,
+  Body as __Body,
+  Heading as __Heading,
+  Box as __Box,
+  Paragraph as __Paragraph,
+  Image as __Image,
 } from "@webstudio-is/sdk-components-react";
-import * as remixComponents from "@webstudio-is/sdk-components-react-remix";
-export const components = new Map(
-  Object.entries(
-    Object.assign(
-      {
-        Body: Body_0,
-        Heading: Heading_0,
-        Box: Box_0,
-        Paragraph: Paragraph_0,
-        Image: Image_0,
-      },
-      remixComponents
-    )
-  )
-) as Components;
+
 export const fontAssets: Asset[] = [];
 export const pageData: PageData = {
   build: {
@@ -229,3 +216,44 @@ export const utils = {
 };
 
 /* eslint-enable */
+
+export const Page = (props: { scripts: ReactNode }) => {
+  const {
+    dataSourceValuesStore,
+    setDataSourceValues,
+    executeEffectfulExpression,
+  } = useContext(ReactSdkContext);
+  const dataSourceValues = useStore(dataSourceValuesStore);
+  return (
+    <__Body data-ws-id="On9cvWCxr5rdZtY9O1Bv0" data-ws-component="Body">
+      <__Heading data-ws-id="nVMWvMsaLCcb0o1wuNQgg" data-ws-component="Heading">
+        {"DO NOT TOUCH THIS PROJECT, IT'S USED FOR FIXTURES"}
+      </__Heading>
+      <__Box data-ws-id="f0kF-WmL7DQg7MSyRvqY1" data-ws-component="Box">
+        <__Box data-ws-id="5XDbqPrZDeCwq4YJ3CHsc" data-ws-component="Box">
+          <__Heading
+            data-ws-id="oLXYe1UQiVMhVnZGvJSMr"
+            data-ws-component="Heading"
+          >
+            {"Heading"}
+          </__Heading>
+          <__Paragraph
+            data-ws-id="p34JHWcU6UNrd9FVnY80Q"
+            data-ws-component="Paragraph"
+          >
+            {
+              "a little kitten painted in black and white gouache with a thick brush"
+            }
+          </__Paragraph>
+        </__Box>
+        <__Box data-ws-id="qPnkiFGDj8dITWb1kmpGl" data-ws-component="Box">
+          <__Image
+            data-ws-id="pX1ovPI7NdC0HRjkw6Kpw"
+            data-ws-component="Image"
+          />
+        </__Box>
+      </__Box>
+      {props.scripts}
+    </__Body>
+  );
+};

@@ -4,8 +4,11 @@ import { rm, mkdir, access, mkdtemp, rename } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { cwd } from "node:process";
 import {
+  createComponentVariableName,
   generateCssText,
+  generatePageComponent,
   generateUtilsExport,
+  getIndexesWithinAncestors,
   namespaceMeta,
   type Params,
   type WsComponentMeta,
@@ -21,6 +24,7 @@ import { findTreeInstanceIds } from "@webstudio-is/sdk";
 import type { Asset, FontAsset } from "@webstudio-is/sdk";
 import type { Data } from "@webstudio-is/http-client";
 import * as baseComponentMetas from "@webstudio-is/sdk-components-react/metas";
+import * as remixComponentComponents from "@webstudio-is/sdk-components-react-remix";
 import * as remixComponentMetas from "@webstudio-is/sdk-components-react-remix/metas";
 import * as radixComponentMetas from "@webstudio-is/sdk-components-react-radix/metas";
 import pLimit from "p-limit";
@@ -284,77 +288,81 @@ export const prebuild = async (options: {
 
   spinner.text = "Generating routes and pages";
   for (const [pathName, pageComponents] of Object.entries(componentsByPage)) {
-    const components = Array.from(pageComponents);
-    const namespaces = new Map<string, Set<string>>();
-    const DEFAULT_NAMESPACE = "@webstudio-is/sdk-components-react";
-    let namespaceId = 0;
-    const namespaceToId = new Map<string, number>();
+    const namespaces = new Map<
+      string,
+      Set<[importName: string, componentName: string]>
+    >();
+    const BASE_NAMESPACE = "@webstudio-is/sdk-components-react";
+    const REMIX_NAMESPACE = "@webstudio-is/sdk-components-react-remix";
 
-    for (const component of components) {
+    for (const component of pageComponents) {
       const nameArr = component.split(":");
-      const [namespace, name] =
+      let [namespace, name] =
         nameArr.length === 1 ? [undefined, nameArr[0]] : nameArr;
 
-      if (namespaces.has(namespace ?? DEFAULT_NAMESPACE) === false) {
-        namespaces.set(namespace ?? DEFAULT_NAMESPACE, new Set<string>());
-        namespaceToId.set(namespace ?? DEFAULT_NAMESPACE, namespaceId);
-        namespaceId++;
+      if (namespace === undefined) {
+        if (name in remixComponentComponents) {
+          namespace = REMIX_NAMESPACE;
+        } else {
+          namespace = BASE_NAMESPACE;
+        }
       }
 
-      namespaces.get(namespace ?? DEFAULT_NAMESPACE)?.add(name);
+      if (namespaces.has(namespace) === false) {
+        namespaces.set(
+          namespace,
+          new Set<[importName: string, componentName: string]>()
+        );
+      }
+
+      namespaces.get(namespace)?.add([name, component]);
     }
 
     let componentImports = "";
-    let assignComponent = "";
     for (const [namespace, componentsSet] of namespaces.entries()) {
-      componentImports = `${componentImports}
-import { ${Array.from(componentsSet)
+      const specifiers = Array.from(componentsSet)
         .map(
-          (component) =>
-            `${component} as ${component}_${namespaceToId.get(namespace)}`
+          ([importName, component]) =>
+            `${importName} as ${createComponentVariableName(component)}`
         )
-        .join(", ")} } from "${namespace}";`;
-
-      if (namespace === DEFAULT_NAMESPACE) {
-        assignComponent = `${assignComponent}
-          ${Array.from(componentsSet)
-            .map(
-              (component) =>
-                `"${component}": ${component}_${namespaceToId.get(namespace)}`
-            )
-            .join(",")},`;
-      } else {
-        assignComponent = `${assignComponent}
-          ${Array.from(componentsSet)
-            .map(
-              (component) =>
-                `"${namespace}:${component}": ${component}_${namespaceToId.get(
-                  namespace
-                )}`
-            )
-            .join(",")},`;
-      }
+        .join(", ");
+      componentImports += `import { ${specifiers} } from "${namespace}";\n`;
     }
 
     const pageData = siteDataByPage[pathName];
 
+    const instances = new Map(pageData.build.instances);
+
+    const props = new Map(pageData.build.props);
+
     const utilsExport = generateUtilsExport({
       page: pageData.page,
       metas: componentMetas,
-      instances: new Map(pageData.build.instances),
-      props: new Map(pageData.build.props),
+      instances,
+      props,
       dataSources: new Map(pageData.build.dataSources),
+    });
+
+    const pageComponent = generatePageComponent({
+      rootInstanceId: pageData.page.rootInstanceId,
+      instances,
+      props,
+      indexesWithinAncestors: getIndexesWithinAncestors(
+        componentMetas,
+        instances,
+        [siteData.page.rootInstanceId]
+      ),
     });
 
     const pageExports = `/* eslint-disable */
 /* This is a auto generated file for building the project */ \n
+import { type ReactNode, useContext } from 'react';
+import { useStore } from '@nanostores/react';
 import * as sdk from "@webstudio-is/react-sdk";
 import type { PageData } from "~/routes/_index";
-import type { Components } from "@webstudio-is/react-sdk";
+import { ReactSdkContext } from "@webstudio-is/react-sdk";
 import type { Asset } from "@webstudio-is/sdk";
 ${componentImports}
-import * as remixComponents from "@webstudio-is/sdk-components-react-remix";
-export const components = new Map(Object.entries(Object.assign({ ${assignComponent} }, remixComponents ))) as Components;
 export const fontAssets: Asset[] = ${JSON.stringify(fontAssets)}
 export const pageData: PageData = ${JSON.stringify(pageData)};
 export const user: { email: string | null } | undefined = ${JSON.stringify(
@@ -363,6 +371,8 @@ export const user: { email: string | null } | undefined = ${JSON.stringify(
 export const projectId = "${siteData.build.projectId}";
 
 ${utilsExport}
+
+${pageComponent}
 `;
 
     const fileName =
